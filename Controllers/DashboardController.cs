@@ -30,4 +30,31 @@ public class DashboardController : ControllerBase
             balance
         });
     }
+
+    [HttpGet("monthly")]
+    public async Task<IActionResult> GetMonthlySummary()
+    {
+        var now = DateTime.UtcNow;
+        var startOfMonth = new DateTime(now.Year, now.Month, 1, 0, 0, 0, DateTimeKind.Utc);
+        var startOfNextMonth = startOfMonth.AddMonths(1);
+
+        var totalIncome = await _context.Incomes
+            .Where(x => x.Date >= startOfMonth && x.Date < startOfNextMonth)
+            .SumAsync(x => (decimal?)x.Amount) ?? 0;
+
+        var totalExpense = await _context.Expenses
+            .Where(x => x.Date >= startOfMonth && x.Date < startOfNextMonth)
+            .SumAsync(x => (decimal?)x.Amount) ?? 0;
+
+        var balance = totalIncome - totalExpense;
+
+        return Ok(new
+        {
+            year = now.Year,
+            month = now.Month,
+            totalIncome,
+            totalExpense,
+            balance
+        });
+    }
 }
