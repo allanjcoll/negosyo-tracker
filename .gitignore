@@ -1,0 +1,14 @@
+# Node
+frontend/node_modules
+frontend/.next
+
+# .NET
+backend/bin
+backend/obj
+publish/
+
+# env
+.env.local
+
+# OS
+.DS_Store
