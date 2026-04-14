@@ -1,3 +1,31 @@
+import { revalidatePath } from "next/cache";
+
+async function createIncome(formData: FormData) {
+  "use server";
+
+  const payload = {
+    source: formData.get("source"),
+    amount: Number(formData.get("amount")),
+    date: formData.get("date"),
+    notes: formData.get("notes"),
+  };
+
+  const res = await fetch("http://127.0.0.1:5000/api/income", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+
+  if (!res.ok) {
+    throw new Error("Failed to create income");
+  }
+
+  revalidatePath("/income");
+  revalidatePath("/");
+}
+
 async function getIncome() {
   const res = await fetch("http://127.0.0.1:5000/api/income", {
     cache: "no-store",
@@ -28,7 +56,7 @@ export default async function IncomePage() {
           <div>
             <h1 className="text-3xl font-bold text-gray-900">Income</h1>
             <p className="mt-1 text-sm text-gray-500">
-              View all recorded income entries
+              View and add income entries
             </p>
           </div>
 
@@ -38,6 +66,72 @@ export default async function IncomePage() {
           >
             Back to Dashboard
           </a>
+        </div>
+
+        <div className="mb-8 rounded-2xl bg-white p-6 shadow">
+          <h2 className="mb-4 text-xl font-semibold text-gray-900">Add Income</h2>
+
+          <form action={createIncome} className="grid gap-4 md:grid-cols-2">
+            <div>
+              <label className="mb-1 block text-sm font-medium text-gray-700">
+                Source
+              </label>
+              <input
+                type="text"
+                name="source"
+                required
+                className="w-full rounded-xl border border-gray-300 px-4 py-2 text-sm outline-none focus:border-green-500"
+                placeholder="e.g. Sales"
+              />
+            </div>
+
+            <div>
+              <label className="mb-1 block text-sm font-medium text-gray-700">
+                Amount
+              </label>
+              <input
+                type="number"
+                name="amount"
+                step="0.01"
+                required
+                className="w-full rounded-xl border border-gray-300 px-4 py-2 text-sm outline-none focus:border-green-500"
+                placeholder="e.g. 500"
+              />
+            </div>
+
+            <div>
+              <label className="mb-1 block text-sm font-medium text-gray-700">
+                Date
+              </label>
+              <input
+                type="date"
+                name="date"
+                required
+                className="w-full rounded-xl border border-gray-300 px-4 py-2 text-sm outline-none focus:border-green-500"
+              />
+            </div>
+
+            <div>
+              <label className="mb-1 block text-sm font-medium text-gray-700">
+                Notes
+              </label>
+              <input
+                type="text"
+                name="notes"
+                className="w-full rounded-xl border border-gray-300 px-4 py-2 text-sm outline-none focus:border-green-500"
+                placeholder="Optional notes"
+              />
+            </div>
+
+            <div className="md:col-span-2">
+              <button
+                type="submit"
+                className="rounded-xl bg-green-600 px-5 py-2 text-sm font-medium text-white hover:bg-green-700"
+              >
+                Save Income
+              </button>
+            </div>
+          </form>
         </div>
 
         <div className="overflow-hidden rounded-2xl bg-white shadow">
