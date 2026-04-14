@@ -1,5 +1,5 @@
 async function getDashboard() {
-  const res = await fetch("http://127.0.0.1:5000/api/dashboard/summary", {
+  const res = await fetch("http://127.0.0.1/api/dashboard/summary", {
     cache: "no-store",
   });
 

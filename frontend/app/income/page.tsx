@@ -1,16 +1,18 @@
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
+import SubmitButton from "./submit-button";
 
 async function createIncome(formData: FormData) {
   "use server";
 
   const payload = {
-    source: formData.get("source"),
+    source: String(formData.get("source") || ""),
     amount: Number(formData.get("amount")),
-    date: formData.get("date"),
-    notes: formData.get("notes"),
+    date: String(formData.get("date") || ""),
+    notes: String(formData.get("notes") || ""),
   };
 
-  const res = await fetch("http://127.0.0.1:5000/api/income", {
+  const res = await fetch("http://127.0.0.1/api/income", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -24,10 +26,11 @@ async function createIncome(formData: FormData) {
 
   revalidatePath("/income");
   revalidatePath("/");
+  redirect("/income");
 }
 
 async function getIncome() {
-  const res = await fetch("http://127.0.0.1:5000/api/income", {
+  const res = await fetch("http://127.0.0.1/api/income", {
     cache: "no-store",
   });
 
@@ -124,12 +127,7 @@ export default async function IncomePage() {
             </div>
 
             <div className="md:col-span-2">
-              <button
-                type="submit"
-                className="rounded-xl bg-green-600 px-5 py-2 text-sm font-medium text-white hover:bg-green-700"
-              >
-                Save Income
-              </button>
+              <SubmitButton />
             </div>
           </form>
         </div>
