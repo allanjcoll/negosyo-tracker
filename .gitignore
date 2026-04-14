@@ -9,6 +9,8 @@ publish/
 
 # env
 .env.local
+frontend/.env.local
+backend/.env
 
 # OS
 .DS_Store
