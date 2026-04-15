@@ -10,7 +10,7 @@ async function createExpense(formData: FormData) {
     notes: formData.get("notes"),
   };
 
-  const res = await fetch("http://127.0.0.1/api/expense", {
+  const res = await fetch("http://127.0.0.1:5000/api/expense", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -27,7 +27,8 @@ async function createExpense(formData: FormData) {
 }
 
 async function getExpenses() {
-  const res = await fetch("http://127.0.0.1/api/expense", {
+  const res = await fetch("http://127.0.0.1:5000/api/expense", {
+
     cache: "no-store",
   });
 

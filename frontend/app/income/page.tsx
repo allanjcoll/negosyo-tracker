@@ -12,7 +12,7 @@ async function createIncome(formData: FormData) {
     notes: String(formData.get("notes") || ""),
   };
 
-  const res = await fetch("http://127.0.0.1/api/income", {
+  const res = await fetch("http://127.0.0.1:5000/api/income", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -30,7 +30,7 @@ async function createIncome(formData: FormData) {
 }
 
 async function getIncome() {
-  const res = await fetch("http://127.0.0.1/api/income", {
+  const res = await fetch("http://127.0.0.1:5000/api/income", {
     cache: "no-store",
   });
 
