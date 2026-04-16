@@ -20,10 +20,16 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={`${inter.variable} h-full antialiased`}>
-      <body className="min-h-full flex flex-col">
-        <SessionGuard />
-        {children}
-      </body>
+	<body className="bg-black text-white">
+  <nav className="bg-gray-900 px-4 py-3 flex gap-4">
+    <a href="/" className="hover:underline">Dashboard</a>
+    <a href="/income" className="hover:underline">Sales</a>
+    <a href="/expenses" className="hover:underline">Expenses</a>
+    <a href="/login" className="ml-auto hover:underline">Logout</a>
+  </nav>
+
+  {children}
+</body>
     </html>
   );
 }

@@ -1,141 +1,102 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 
-type DashboardData = {
-  totalIncome: number;
+type Summary = {
+  totalSales: number;
   totalExpense: number;
   balance: number;
+  todaySales: number;
+  todayExpenses: number;
+  todayProfit: number;
 };
 
-export default function Home() {
-  const router = useRouter();
-  const [data, setData] = useState<DashboardData | null>(null);
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "";
+
+export default function DashboardPage() {
+  const [summary, setSummary] = useState<Summary | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+
+  const token =
+    typeof window !== "undefined" ? localStorage.getItem("token") : null;
 
   useEffect(() => {
-    async function loadDashboard() {
-      const token = localStorage.getItem("token");
-
-      if (!token) {
-        router.push("/login");
-        return;
-      }
-
+    async function fetchSummary() {
       try {
-        const res = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/dashboard/summary`,
-          {
-            method: "GET",
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-            cache: "no-store",
-          }
-        );
-
-        if (res.status === 401) {
-          localStorage.removeItem("token");
-          router.push("/login");
-          return;
-        }
+        const res = await fetch(`${API_BASE}/api/dashboard/summary`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
 
         if (!res.ok) {
-          throw new Error("Failed to fetch dashboard data");
+          throw new Error("Failed to fetch dashboard summary");
         }
 
-        const result = await res.json();
-        setData(result);
-      } catch {
-        setError("Failed to load dashboard");
+        const data = await res.json();
+        setSummary(data);
+      } catch (error) {
+        console.error(error);
       } finally {
         setLoading(false);
       }
     }
 
-    loadDashboard();
-  }, [router]);
+    fetchSummary();
+  }, []);
 
-  function handleLogout() {
-    localStorage.removeItem("token");
-    router.push("/login");
-  }
+  const cards = [
+    {
+      title: "Today Sales",
+      value: summary?.todaySales ?? 0,
+    },
+    {
+      title: "Today Expenses",
+      value: summary?.todayExpenses ?? 0,
+    },
+    {
+      title: "Today Profit",
+      value: summary?.todayProfit ?? 0,
+    },
+    {
+      title: "Total Sales",
+      value: summary?.totalSales ?? 0,
+    },
+    {
+      title: "Total Expenses",
+      value: summary?.totalExpense ?? 0,
+    },
+    {
+      title: "Net Balance",
+      value: summary?.balance ?? 0,
+    },
+  ];
 
-  if (loading) {
-    return (
-      <main className="min-h-screen bg-gray-100 p-8">
-        <div className="mx-auto max-w-5xl rounded-2xl bg-white p-6 shadow">
-          <p className="text-sm text-gray-500">Loading dashboard...</p>
-        </div>
-      </main>
-    );
-  }
+  return (
+    <main className="p-4 md:p-6">
+      <div className="mx-auto max-w-6xl">
+        <h1 className="text-2xl font-bold mb-6">Dashboard</h1>
 
-  if (error || !data) {
-    return (
-      <main className="min-h-screen bg-gray-100 p-8">
-        <div className="mx-auto max-w-5xl rounded-2xl bg-white p-6 shadow">
-          <p className="text-sm text-red-600">{error || "No data available"}</p>
-        </div>
-      </main>
-    );
-  }
-
-return (
-  <main className="min-h-screen bg-gray-100 p-4 sm:p-6 md:p-8">
-    <div className="mx-auto max-w-5xl">
-      <div className="mb-6 flex flex-col gap-4 md:mb-8 md:flex-row md:items-center md:justify-between">
-        <h1 className="text-2xl font-bold text-gray-900 sm:text-3xl">
-          Meridian Water Plus
-        </h1>
-
-        <div className="flex flex-wrap gap-3">
-          <a
-            href="/income"
-            className="rounded-xl bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700"
-          >
-            Income
-          </a>
-          <a
-            href="/expenses"
-            className="rounded-xl bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700"
-          >
-            Expenses
-          </a>
-          <button
-            onClick={handleLogout}
-            className="rounded-xl bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-700"
-          >
-            Logout
-          </button>
-        </div>
+        {loading ? (
+          <div className="bg-white rounded-xl shadow p-6 text-sm text-gray-500">
+            Loading dashboard...
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+            {cards.map((card) => (
+              <div
+                key={card.title}
+                className="bg-white rounded-xl shadow p-5"
+              >
+                <p className="text-sm text-gray-500 mb-2">{card.title}</p>
+                <h2 className="text-2xl font-bold">
+                  {Number(card.value).toFixed(2)}
+                </h2>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
-
-      <div className="grid gap-4 sm:gap-6 md:grid-cols-3">
-        <div className="rounded-2xl bg-white p-5 shadow sm:p-6">
-          <h2 className="text-sm font-medium text-gray-500">Total Income</h2>
-          <p className="mt-2 text-3xl font-bold text-green-600 sm:text-4xl">
-            ₱{data.totalIncome}
-          </p>
-        </div>
-
-        <div className="rounded-2xl bg-white p-5 shadow sm:p-6">
-          <h2 className="text-sm font-medium text-gray-500">Total Expense</h2>
-          <p className="mt-2 text-3xl font-bold text-red-600 sm:text-4xl">
-            ₱{data.totalExpense}
-          </p>
-        </div>
-
-        <div className="rounded-2xl bg-white p-5 shadow sm:p-6">
-          <h2 className="text-sm font-medium text-gray-500">Balance</h2>
-          <p className="mt-2 text-3xl font-bold text-blue-600 sm:text-4xl">
-            ₱{data.balance}
-          </p>
-        </div>
-      </div>
-    </div>
-  </main>
-);
+    </main>
+  );
 }

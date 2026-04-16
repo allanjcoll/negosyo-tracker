@@ -7,7 +7,7 @@ namespace backend.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-[Authorize(Roles = "Admin")]
+[Authorize]
 public class DashboardController : ControllerBase
 {
     private readonly ApplicationDbContext _context;
@@ -20,43 +20,31 @@ public class DashboardController : ControllerBase
     [HttpGet("summary")]
     public async Task<IActionResult> GetSummary()
     {
-        var totalIncome = await _context.Incomes.SumAsync(x => (decimal?)x.Amount) ?? 0;
+        var totalSales = await _context.Incomes.SumAsync(x => (decimal?)x.Amount) ?? 0;
         var totalExpense = await _context.Expenses.SumAsync(x => (decimal?)x.Amount) ?? 0;
+        var balance = totalSales - totalExpense;
 
-        var balance = totalIncome - totalExpense;
+        var tz = TimeZoneInfo.FindSystemTimeZoneById("Asia/Manila");
+        var today = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, tz).Date;
+
+        var todaySales = await _context.Incomes
+            .Where(x => TimeZoneInfo.ConvertTimeFromUtc(x.Date, tz).Date == today)
+            .SumAsync(x => (decimal?)x.Amount) ?? 0;
+
+        var todayExpenses = await _context.Expenses
+            .Where(x => x.Date.Date == today)
+            .SumAsync(x => (decimal?)x.Amount) ?? 0;
+
+        var todayProfit = todaySales - todayExpenses;
 
         return Ok(new
         {
-            totalIncome,
+            totalSales,
             totalExpense,
-            balance
-        });
-    }
-
-    [HttpGet("monthly")]
-    public async Task<IActionResult> GetMonthlySummary()
-    {
-        var now = DateTime.UtcNow;
-        var startOfMonth = new DateTime(now.Year, now.Month, 1, 0, 0, 0, DateTimeKind.Utc);
-        var startOfNextMonth = startOfMonth.AddMonths(1);
-
-        var totalIncome = await _context.Incomes
-            .Where(x => x.Date >= startOfMonth && x.Date < startOfNextMonth)
-            .SumAsync(x => (decimal?)x.Amount) ?? 0;
-
-        var totalExpense = await _context.Expenses
-            .Where(x => x.Date >= startOfMonth && x.Date < startOfNextMonth)
-            .SumAsync(x => (decimal?)x.Amount) ?? 0;
-
-        var balance = totalIncome - totalExpense;
-
-        return Ok(new
-        {
-            year = now.Year,
-            month = now.Month,
-            totalIncome,
-            totalExpense,
-            balance
+            balance,
+            todaySales,
+            todayExpenses,
+            todayProfit
         });
     }
 }
