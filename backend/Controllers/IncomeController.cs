@@ -18,16 +18,17 @@ public class IncomeController : ControllerBase
         _context = context;
     }
 
-    [HttpGet]
-    public async Task<ActionResult<IEnumerable<Income>>> GetAll()
-    {
-        var incomes = await _context.Incomes
-            .OrderByDescending(x => x.Date)
-            .ThenByDescending(x => x.Id)
-            .ToListAsync();
+[HttpGet]
+public async Task<ActionResult<IEnumerable<Income>>> GetAll()
+{
+    var incomes = await _context.Incomes
+        .Include(x => x.Customer)   // 👈 ADD THIS LINE
+        .OrderByDescending(x => x.Date)
+        .ThenByDescending(x => x.Id)
+        .ToListAsync();
 
-        return Ok(incomes);
-    }
+    return Ok(incomes);
+}
 
     [HttpGet("{id}")]
     public async Task<ActionResult<Income>> GetById(int id)

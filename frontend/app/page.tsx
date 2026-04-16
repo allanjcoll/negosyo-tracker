@@ -43,52 +43,46 @@ export default function DashboardPage() {
     }
 
     fetchSummary();
-  }, []);
+  }, [token]);
 
-	const formatCurrency = (value: number) =>
-  value.toLocaleString("en-PH", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  });
+  const formatCurrency = (value: number) =>
+    value.toLocaleString("en-PH", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
 
-const cards = [
-  {
-    title: "Today Sales",
-    value: formatCurrency(summary?.todaySales ?? 0),
-    color: "text-green-400",
-  },
-  {
-    title: "Today Expenses",
-    value: formatCurrency(summary?.todayExpenses ?? 0),
-    color: "text-red-400",
-  },
-  {
-    title: "Today Profit",
-    value: formatCurrency(summary?.todayProfit ?? 0),
-    color:
-      (summary?.todayProfit ?? 0) >= 0
-        ? "text-green-400"
-        : "text-red-400",
-  },
-  {
-    title: "Total Sales",
-    value: formatCurrency(summary?.totalSales ?? 0),
-    color: "text-green-400",
-  },
-  {
-    title: "Total Expenses",
-    value: formatCurrency(summary?.totalExpense ?? 0),
-    color: "text-red-400",
-  },
-  {
-    title: "Net Balance",
-    value: formatCurrency(summary?.balance ?? 0),
-    color:
-      (summary?.balance ?? 0) >= 0
-        ? "text-green-400"
-        : "text-red-400",
-  },
-];
+  const cards = [
+    {
+      title: "Today Sales",
+      rawValue: summary?.todaySales ?? 0,
+      value: formatCurrency(summary?.todaySales ?? 0),
+    },
+    {
+      title: "Today Expenses",
+      rawValue: summary?.todayExpenses ?? 0,
+      value: formatCurrency(summary?.todayExpenses ?? 0),
+    },
+    {
+      title: "Today Profit",
+      rawValue: summary?.todayProfit ?? 0,
+      value: formatCurrency(summary?.todayProfit ?? 0),
+    },
+    {
+      title: "Total Sales",
+      rawValue: summary?.totalSales ?? 0,
+      value: formatCurrency(summary?.totalSales ?? 0),
+    },
+    {
+      title: "Total Expenses",
+      rawValue: summary?.totalExpense ?? 0,
+      value: formatCurrency(summary?.totalExpense ?? 0),
+    },
+    {
+      title: "Net Balance",
+      rawValue: summary?.balance ?? 0,
+      value: formatCurrency(summary?.balance ?? 0),
+    },
+  ];
 
   return (
     <main className="p-4 md:p-6">
@@ -101,17 +95,30 @@ const cards = [
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
-            {cards.map((card) => (
-              <div
-                key={card.title}
-                className="bg-white rounded-xl shadow p-5"
-              >
-                <p className="text-sm text-gray-500 mb-2">{card.title}</p>
-			<h2 className={`text-2xl font-bold ${card.color}`}>
-  ₱ {card.value}
-</h2>
-              </div>
-            ))}
+            {cards.map((card) => {
+              const valueColor =
+                card.title.includes("Expense")
+                  ? "text-red-400"
+                  : card.title.includes("Profit") || card.title.includes("Balance")
+                  ? card.rawValue >= 0
+                    ? "text-green-400"
+                    : "text-red-400"
+                  : card.title.includes("Sales")
+                  ? "text-green-400"
+                  : "text-gray-900";
+
+              return (
+                <div
+                  key={card.title}
+                  className="bg-white rounded-xl shadow p-5"
+                >
+                  <p className="text-sm text-gray-500 mb-2">{card.title}</p>
+                  <h2 className={`text-2xl font-bold ${valueColor}`}>
+                    ₱ {card.value}
+                  </h2>
+                </div>
+              );
+            })}
           </div>
         )}
       </div>
