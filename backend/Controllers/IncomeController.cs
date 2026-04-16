@@ -8,7 +8,7 @@ namespace backend.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-[Authorize(Roles = "Admin")]
+[Authorize]
 public class IncomeController : ControllerBase
 {
     private readonly ApplicationDbContext _context;
@@ -23,6 +23,7 @@ public class IncomeController : ControllerBase
     {
         var incomes = await _context.Incomes
             .OrderByDescending(x => x.Date)
+            .ThenByDescending(x => x.Id)
             .ToListAsync();
 
         return Ok(incomes);
@@ -35,7 +36,7 @@ public class IncomeController : ControllerBase
 
         if (income == null)
         {
-            return NotFound(new { message = "Income not found" });
+            return NotFound(new { message = "Sale record not found" });
         }
 
         return Ok(income);
@@ -44,50 +45,59 @@ public class IncomeController : ControllerBase
     [HttpPost]
     public async Task<ActionResult<Income>> Create(Income income)
     {
-    income.Date = DateTime.SpecifyKind(income.Date, DateTimeKind.Utc);
+        income.Amount = income.Quantity * income.UnitPrice;
 
-    _context.Incomes.Add(income);
+	if (income.Date == default)
+{
+    income.Date = DateTime.UtcNow;
+}
+else
+{
+ 
+   income.Date = DateTime.SpecifyKind(income.Date, DateTimeKind.Utc);
+}
+        _context.Incomes.Add(income);
         await _context.SaveChangesAsync();
 
         return CreatedAtAction(nameof(GetById), new { id = income.Id }, income);
     }
 
     [HttpPut("{id}")]
-    public async Task<IActionResult> Update(int id, Income income)
+    public async Task<IActionResult> Update(int id, Income updatedIncome)
     {
-        if (id != income.Id)
-        {
-            return BadRequest(new { message = "ID mismatch" });
-        }
-
         var existingIncome = await _context.Incomes.FindAsync(id);
+
         if (existingIncome == null)
         {
-            return NotFound(new { message = "Income not found" });
+            return NotFound(new { message = "Sale record not found" });
         }
 
-        existingIncome.Source = income.Source;
-        existingIncome.Amount = income.Amount;
-        existingIncome.Date = income.Date;
-        existingIncome.Notes = income.Notes;
+        existingIncome.Product = updatedIncome.Product;
+        existingIncome.Quantity = updatedIncome.Quantity;
+        existingIncome.UnitPrice = updatedIncome.UnitPrice;
+        existingIncome.Amount = updatedIncome.Quantity * updatedIncome.UnitPrice;
+        existingIncome.Date = updatedIncome.Date == default ? existingIncome.Date : updatedIncome.Date;
 
         await _context.SaveChangesAsync();
-        return NoContent();
+
+        return Ok(existingIncome);
     }
 
     [HttpDelete("{id}")]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> Delete(int id)
     {
         var income = await _context.Incomes.FindAsync(id);
+
         if (income == null)
         {
-            return NotFound(new { message = "Income not found" });
+            return NotFound(new { message = "Sale record not found" });
         }
 
         _context.Incomes.Remove(income);
         await _context.SaveChangesAsync();
 
-        return NoContent();
+        return Ok(new { message = "Sale record deleted successfully" });
     }
-
 }
+
