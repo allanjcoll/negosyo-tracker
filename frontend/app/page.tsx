@@ -45,32 +45,50 @@ export default function DashboardPage() {
     fetchSummary();
   }, []);
 
-  const cards = [
-    {
-      title: "Today Sales",
-      value: summary?.todaySales ?? 0,
-    },
-    {
-      title: "Today Expenses",
-      value: summary?.todayExpenses ?? 0,
-    },
-    {
-      title: "Today Profit",
-      value: summary?.todayProfit ?? 0,
-    },
-    {
-      title: "Total Sales",
-      value: summary?.totalSales ?? 0,
-    },
-    {
-      title: "Total Expenses",
-      value: summary?.totalExpense ?? 0,
-    },
-    {
-      title: "Net Balance",
-      value: summary?.balance ?? 0,
-    },
-  ];
+	const formatCurrency = (value: number) =>
+  value.toLocaleString("en-PH", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+
+const cards = [
+  {
+    title: "Today Sales",
+    value: formatCurrency(summary?.todaySales ?? 0),
+    color: "text-green-400",
+  },
+  {
+    title: "Today Expenses",
+    value: formatCurrency(summary?.todayExpenses ?? 0),
+    color: "text-red-400",
+  },
+  {
+    title: "Today Profit",
+    value: formatCurrency(summary?.todayProfit ?? 0),
+    color:
+      (summary?.todayProfit ?? 0) >= 0
+        ? "text-green-400"
+        : "text-red-400",
+  },
+  {
+    title: "Total Sales",
+    value: formatCurrency(summary?.totalSales ?? 0),
+    color: "text-green-400",
+  },
+  {
+    title: "Total Expenses",
+    value: formatCurrency(summary?.totalExpense ?? 0),
+    color: "text-red-400",
+  },
+  {
+    title: "Net Balance",
+    value: formatCurrency(summary?.balance ?? 0),
+    color:
+      (summary?.balance ?? 0) >= 0
+        ? "text-green-400"
+        : "text-red-400",
+  },
+];
 
   return (
     <main className="p-4 md:p-6">
@@ -89,9 +107,9 @@ export default function DashboardPage() {
                 className="bg-white rounded-xl shadow p-5"
               >
                 <p className="text-sm text-gray-500 mb-2">{card.title}</p>
-                <h2 className="text-2xl font-bold">
-                  {Number(card.value).toFixed(2)}
-                </h2>
+			<h2 className={`text-2xl font-bold ${card.color}`}>
+  ₱ {card.value}
+</h2>
               </div>
             ))}
           </div>
