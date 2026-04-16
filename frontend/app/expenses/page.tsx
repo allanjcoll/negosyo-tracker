@@ -1,43 +1,7 @@
-import { revalidatePath } from "next/cache";
+"use client";
 
-async function createExpense(formData: FormData) {
-  "use server";
-
-  const payload = {
-    category: formData.get("category"),
-    amount: Number(formData.get("amount")),
-    date: formData.get("date"),
-    notes: formData.get("notes"),
-  };
-
-  const res = await fetch("http://127.0.0.1:5000/api/expense", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(payload),
-  });
-
-  if (!res.ok) {
-    throw new Error("Failed to create expense");
-  }
-
-  revalidatePath("/expenses");
-  revalidatePath("/");
-}
-
-async function getExpenses() {
-  const res = await fetch("http://127.0.0.1:5000/api/expense", {
-
-    cache: "no-store",
-  });
-
-  if (!res.ok) {
-    throw new Error("Failed to fetch expense data");
-  }
-
-  return res.json();
-}
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 
 type ExpenseItem = {
   id: number;
@@ -47,141 +11,242 @@ type ExpenseItem = {
   notes?: string;
 };
 
-export default async function ExpensesPage() {
-  const expenses: ExpenseItem[] = await getExpenses();
+export default function ExpensesPage() {
+  const router = useRouter();
+  const [expenses, setExpenses] = useState<ExpenseItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  const [form, setForm] = useState({
+    category: "",
+    amount: "",
+    date: "",
+    notes: "",
+  });
+
+  useEffect(() => {
+    loadExpenses();
+  }, []);
+
+  async function loadExpenses() {
+    const token = localStorage.getItem("token");
+
+    if (!token) {
+      router.push("/login");
+      return;
+    }
+
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/expense`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        cache: "no-store",
+      });
+
+      if (res.status === 401) {
+        localStorage.removeItem("token");
+        router.push("/login");
+        return;
+      }
+
+      if (!res.ok) {
+        throw new Error();
+      }
+
+      const data = await res.json();
+      setExpenses(data);
+    } catch {
+      setError("Failed to load expense data");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+
+    const token = localStorage.getItem("token");
+
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/expense`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          category: form.category,
+          amount: Number(form.amount),
+          date: form.date,
+          notes: form.notes,
+        }),
+      });
+
+      if (res.status === 401) {
+        localStorage.removeItem("token");
+        router.push("/login");
+        return;
+      }
+
+      if (!res.ok) {
+        throw new Error();
+      }
+
+      setForm({ category: "", amount: "", date: "", notes: "" });
+      loadExpenses();
+    } catch {
+      alert("Failed to save expense");
+    }
+  }
+
+async function handleDelete(id: number) {
+  const confirmDelete = confirm("Delete this expense record?");
+  if (!confirmDelete) return;
+
+  const token = localStorage.getItem("token");
+
+  try {
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/expense/${id}`, {
+      method: "DELETE",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    if (res.status === 401) {
+      localStorage.removeItem("token");
+      router.push("/login");
+      return;
+    }
+
+    if (!res.ok) {
+      throw new Error();
+    }
+
+    loadExpenses();
+  } catch {
+    alert("Failed to delete expense");
+  }
+}
+
+  function handleLogout() {
+    localStorage.removeItem("token");
+    router.push("/login");
+  }
+
+  if (loading) {
+    return <p className="p-4 sm:p-6">Loading...</p>;
+  }
 
   return (
-    <main className="min-h-screen bg-gray-100 p-8">
+    <main className="min-h-screen bg-gray-100 p-4 sm:p-6 md:p-8">
       <div className="mx-auto max-w-6xl">
-        <div className="mb-8 flex items-center justify-between">
+        <div className="mb-6 flex flex-col gap-4 md:mb-8 md:flex-row md:items-center md:justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Expenses</h1>
+            <h1 className="text-2xl font-bold text-gray-900 sm:text-3xl">
+              Expenses
+            </h1>
             <p className="mt-1 text-sm text-gray-500">
               View and add expense entries
             </p>
           </div>
 
-          <a
-            href="/"
-            className="rounded-xl bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-700"
-          >
-            Back to Dashboard
-          </a>
+          <div className="flex flex-wrap gap-3">
+            <a
+              href="/"
+              className="rounded-xl bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-700"
+            >
+              Dashboard
+            </a>
+            <button
+              onClick={handleLogout}
+              className="rounded-xl bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-700"
+            >
+              Logout
+            </button>
+          </div>
         </div>
 
-        <div className="mb-8 rounded-2xl bg-white p-6 shadow">
-          <h2 className="mb-4 text-xl font-semibold text-gray-900">Add Expense</h2>
+        <form
+          onSubmit={handleSubmit}
+          className="mb-6 grid gap-4 rounded-2xl bg-white p-4 shadow sm:p-6 md:mb-8 md:grid-cols-2"
+        >
+          <input
+            type="text"
+            placeholder="Category"
+            value={form.category}
+            onChange={(e) => setForm({ ...form, category: e.target.value })}
+            className="w-full rounded-xl border border-gray-300 px-4 py-2 text-sm outline-none focus:border-red-500"
+            required
+          />
+          <input
+            type="number"
+            placeholder="Amount"
+            value={form.amount}
+            onChange={(e) => setForm({ ...form, amount: e.target.value })}
+            className="w-full rounded-xl border border-gray-300 px-4 py-2 text-sm outline-none focus:border-red-500"
+            required
+          />
+          <input
+            type="date"
+            value={form.date}
+            onChange={(e) => setForm({ ...form, date: e.target.value })}
+            className="w-full rounded-xl border border-gray-300 px-4 py-2 text-sm outline-none focus:border-red-500"
+            required
+          />
+          <input
+            type="text"
+            placeholder="Notes"
+            value={form.notes}
+            onChange={(e) => setForm({ ...form, notes: e.target.value })}
+            className="w-full rounded-xl border border-gray-300 px-4 py-2 text-sm outline-none focus:border-red-500"
+          />
+          <button className="rounded-xl bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 md:col-span-2">
+            Save Expense
+          </button>
+        </form>
 
-          <form action={createExpense} className="grid gap-4 md:grid-cols-2">
-            <div>
-              <label className="mb-1 block text-sm font-medium text-gray-700">
-                Category
-              </label>
-              <input
-                type="text"
-                name="category"
-                required
-                className="w-full rounded-xl border border-gray-300 px-4 py-2 text-sm outline-none focus:border-red-500"
-                placeholder="e.g. Supplies"
-              />
-            </div>
+        {error && <p className="mb-4 text-sm text-red-600">{error}</p>}
 
-            <div>
-              <label className="mb-1 block text-sm font-medium text-gray-700">
-                Amount
-              </label>
-              <input
-                type="number"
-                name="amount"
-                step="0.01"
-                required
-                className="w-full rounded-xl border border-gray-300 px-4 py-2 text-sm outline-none focus:border-red-500"
-                placeholder="e.g. 100"
-              />
-            </div>
-
-            <div>
-              <label className="mb-1 block text-sm font-medium text-gray-700">
-                Date
-              </label>
-              <input
-                type="date"
-                name="date"
-                required
-                className="w-full rounded-xl border border-gray-300 px-4 py-2 text-sm outline-none focus:border-red-500"
-              />
-            </div>
-
-            <div>
-              <label className="mb-1 block text-sm font-medium text-gray-700">
-                Notes
-              </label>
-              <input
-                type="text"
-                name="notes"
-                className="w-full rounded-xl border border-gray-300 px-4 py-2 text-sm outline-none focus:border-red-500"
-                placeholder="Optional notes"
-              />
-            </div>
-
-            <div className="md:col-span-2">
-              <button
-                type="submit"
-                className="rounded-xl bg-red-600 px-5 py-2 text-sm font-medium text-white hover:bg-red-700"
-              >
-                Save Expense
-              </button>
-            </div>
-          </form>
-        </div>
-
-        <div className="overflow-hidden rounded-2xl bg-white shadow">
-          <table className="min-w-full border-collapse">
+        <div className="overflow-x-auto rounded-2xl bg-white shadow">
+          <table className="min-w-[700px] w-full border-collapse">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">
-                  ID
-                </th>
-                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">
-                  Category
-                </th>
-                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">
-                  Amount
-                </th>
-                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">
-                  Date
-                </th>
-                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">
-                  Notes
-                </th>
-              </tr>
+                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">No</th>
+                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Category</th>
+                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Amount</th>
+                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Date</th>
+                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Notes</th>
+		<th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Action</th>    
+          </tr>
             </thead>
             <tbody>
               {expenses.length === 0 ? (
                 <tr>
-                  <td
-                    colSpan={5}
-                    className="px-6 py-8 text-center text-sm text-gray-500"
-                  >
+                  <td colSpan={6} className="px-4 py-6 text-center text-sm text-gray-500">
                     No expense records found.
                   </td>
+
                 </tr>
               ) : (
-                expenses.map((item) => (
+                expenses.map((item, index) => (
                   <tr key={item.id} className="border-t border-gray-100">
-                    <td className="px-6 py-4 text-sm text-gray-700">{item.id}</td>
-                    <td className="px-6 py-4 text-sm font-medium text-gray-900">
-                      {item.category}
-                    </td>
-                    <td className="px-6 py-4 text-sm font-semibold text-red-600">
-                      ₱{item.amount}
-                    </td>
-                    <td className="px-6 py-4 text-sm text-gray-700">
+                    <td className="px-4 py-4 text-sm text-gray-700">{index + 1}</td>
+                    <td className="px-4 py-4 text-sm font-medium text-gray-900">{item.category}</td>
+                    <td className="px-4 py-4 text-sm font-semibold text-red-600">₱{item.amount}</td>
+                    <td className="px-4 py-4 text-sm text-gray-700">
                       {new Date(item.date).toLocaleDateString()}
                     </td>
-                    <td className="px-6 py-4 text-sm text-gray-700">
-                      {item.notes || "-"}
-                    </td>
+                    <td className="px-4 py-4 text-sm text-gray-700">{item.notes || "-"}</td>
+		   <td className="px-4 py-4">
+  <button
+    onClick={() => handleDelete(item.id)}
+    className="rounded-lg bg-red-500 px-3 py-1 text-xs text-white hover:bg-red-600"
+  >
+    Delete
+  </button>
+</td>
                   </tr>
                 ))
               )}
@@ -192,3 +257,4 @@ export default async function ExpensesPage() {
     </main>
   );
 }
+

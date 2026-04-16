@@ -12,4 +12,5 @@ public class ApplicationDbContext : DbContext
 
     public DbSet<Expense> Expenses => Set<Expense>();
     public DbSet<Income> Incomes => Set<Income>();
+    public DbSet<User> Users => Set<User>();
 }

@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using backend.Data;
@@ -7,6 +8,7 @@ namespace backend.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[Authorize(Roles = "Admin")]
 public class ExpenseController : ControllerBase
 {
     private readonly ApplicationDbContext _context;
@@ -87,4 +89,6 @@ public class ExpenseController : ControllerBase
 
         return NoContent();
     }
+
+
 }
