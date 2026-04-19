@@ -6,6 +6,11 @@ using backend.Models;
 
 namespace backend.Controllers;
 
+public class AddPaymentRequest
+{
+    public decimal Amount { get; set; }
+}
+
 [ApiController]
 [Route("api/[controller]")]
 [Authorize]
@@ -110,6 +115,29 @@ public class OrdersController : ControllerBase
         return Ok(order);
     }
 
+[HttpGet("{id}/payments")]
+public async Task<IActionResult> GetOrderPayments(int id)
+{
+    var orderExists = await _context.Orders.AnyAsync(o => o.Id == id);
+
+    if (!orderExists)
+        return NotFound(new { message = "Order not found" });
+
+    var payments = await _context.Payments
+        .Where(p => p.OrderId == id)
+        .OrderByDescending(p => p.PaymentDate)
+        .Select(p => new
+        {
+            p.Id,
+            p.Amount,
+            p.PaymentDate
+        })
+        .ToListAsync();
+
+    return Ok(payments);
+}
+
+
 [HttpPost]
 public async Task<ActionResult<Order>> Create(Order order)
 {
@@ -171,4 +199,50 @@ public async Task<ActionResult<Order>> Create(Order order)
         order.OrderNumber
     });
 }
+
+[HttpPost("{id}/payments")]
+public async Task<IActionResult> AddPayment(int id, [FromBody] AddPaymentRequest request)
+{
+    var order = await _context.Orders.FirstOrDefaultAsync(o => o.Id == id);
+
+    if (order == null)
+        return NotFound(new { message = "Order not found" });
+
+    if (request.Amount <= 0)
+        return BadRequest(new { message = "Payment amount must be greater than zero." });
+
+    if (request.Amount > order.BalanceAmount)
+        return BadRequest(new { message = "Payment amount cannot exceed remaining balance." });
+
+    var payment = new Payment
+    {
+        OrderId = order.Id,
+        Amount = request.Amount,
+        PaymentDate = DateTime.UtcNow
+    };
+
+    _context.Payments.Add(payment);
+
+    order.PaidAmount += request.Amount;
+    order.BalanceAmount = order.TotalAmount - order.PaidAmount;
+
+    if (order.PaidAmount <= 0)
+        order.PaymentStatus = "Unpaid";
+    else if (order.BalanceAmount > 0)
+        order.PaymentStatus = "Partial";
+    else
+        order.PaymentStatus = "Paid";
+
+    await _context.SaveChangesAsync();
+
+    return Ok(new
+    {
+        message = "Payment added successfully",
+        orderId = order.Id,
+        paidAmount = order.PaidAmount,
+        balanceAmount = order.BalanceAmount,
+        paymentStatus = order.PaymentStatus
+    });
+}
+
 }
