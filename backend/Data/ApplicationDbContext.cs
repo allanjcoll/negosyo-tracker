@@ -14,4 +14,8 @@ public class ApplicationDbContext : DbContext
     public DbSet<Income> Incomes => Set<Income>();
     public DbSet<User> Users => Set<User>();
     public DbSet<Customer> Customers { get; set; }
+    public DbSet<Product> Products { get; set; }
+    public DbSet<Order> Orders { get; set; }
+    public DbSet<OrderItem> OrderItems { get; set; }
+    public DbSet<Payment> Payments { get; set; }
 }

@@ -42,7 +42,7 @@ public class CustomersController : ControllerBase
     }
 
     [HttpPost]
-    [Authorize(Roles = "Admin")]
+    [Authorize]
     public async Task<ActionResult<Customer>> Create(Customer customer)
     {
         customer.CreatedAt = DateTime.UtcNow;

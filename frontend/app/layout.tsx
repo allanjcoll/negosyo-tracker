@@ -24,8 +24,10 @@ export default function RootLayout({
 <nav className="bg-gray-900 px-4 py-3 flex gap-4 text-white">
   <a href="/" className="hover:underline text-white">Dashboard</a>
   <a href="/customers" className="hover:underline">Customers</a>
+  <a href="/orders/new" className="hover:underline">New Order</a>
   <a href="/income" className="hover:underline text-white">Sales</a>
   <a href="/expenses" className="hover:underline text-white">Expenses</a>
+  <a href="/products" className="hover:underline">Products</a>
   <a href="/login" className="ml-auto hover:underline text-white">Logout</a>
 </nav>
   {children}

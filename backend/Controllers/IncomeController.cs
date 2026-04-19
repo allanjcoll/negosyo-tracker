@@ -18,49 +18,65 @@ public class IncomeController : ControllerBase
         _context = context;
     }
 
-[HttpGet]
-public async Task<ActionResult<IEnumerable<Income>>> GetAll()
-{
-    var incomes = await _context.Incomes
-        .Include(x => x.Customer)   // 👈 ADD THIS LINE
-        .OrderByDescending(x => x.Date)
-        .ThenByDescending(x => x.Id)
-        .ToListAsync();
-
-    return Ok(incomes);
-}
-
-    [HttpGet("{id}")]
-    public async Task<ActionResult<Income>> GetById(int id)
+    [HttpGet]
+    public async Task<ActionResult<IEnumerable<Income>>> GetAll()
     {
-        var income = await _context.Incomes.FindAsync(id);
+        var incomes = await _context.Incomes
+            .Include(x => x.Customer)
+            .OrderByDescending(x => x.Date)
+            .ThenByDescending(x => x.Id)
+            .ToListAsync();
 
-        if (income == null)
-        {
-            return NotFound(new { message = "Sale record not found" });
-        }
-
-        return Ok(income);
+        return Ok(incomes);
     }
+
+
 
     [HttpPost]
     public async Task<ActionResult<Income>> Create(Income income)
     {
+        if (income.CustomerId == null || income.CustomerId <= 0)
+        {
+            return BadRequest(new { message = "Customer is required." });
+        }
+
+        if (income.ProductId == null || income.ProductId <= 0)
+        {
+            return BadRequest(new { message = "Product is required." });
+        }
+
+        if (income.Quantity <= 0)
+        {
+            return BadRequest(new { message = "Quantity must be greater than 0." });
+        }
+
+        if (income.UnitPrice <= 0)
+        {
+            return BadRequest(new { message = "Unit price must be greater than 0." });
+        }
+
+        var product = await _context.Products.FirstOrDefaultAsync(x => x.Id == income.ProductId);
+        if (product == null)
+        {
+            return BadRequest(new { message = "Selected product not found." });
+        }
+
+        income.Product = product.Name;
         income.Amount = income.Quantity * income.UnitPrice;
 
-	if (income.Date == default)
-{
-    income.Date = DateTime.UtcNow;
-}
-else
-{
- 
-   income.Date = DateTime.SpecifyKind(income.Date, DateTimeKind.Utc);
-}
+        if (income.Date == default)
+        {
+            income.Date = DateTime.UtcNow;
+        }
+        else
+        {
+            income.Date = DateTime.SpecifyKind(income.Date, DateTimeKind.Utc);
+        }
+
         _context.Incomes.Add(income);
         await _context.SaveChangesAsync();
 
-        return CreatedAtAction(nameof(GetById), new { id = income.Id }, income);
+        return Ok(income);
     }
 
     [HttpPut("{id}")]

@@ -44,9 +44,9 @@ public class ExpenseController : ControllerBase
     [HttpPost]
     public async Task<ActionResult<Expense>> Create(Expense expense)
     {
-    expense.Date = DateTime.SpecifyKind(expense.Date, DateTimeKind.Utc);
+        expense.Date = DateTime.SpecifyKind(expense.Date, DateTimeKind.Utc);
 
-    _context.Expenses.Add(expense);
+        _context.Expenses.Add(expense);
         await _context.SaveChangesAsync();
 
         return CreatedAtAction(nameof(GetById), new { id = expense.Id }, expense);

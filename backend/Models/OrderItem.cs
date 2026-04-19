@@ -3,29 +3,27 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace backend.Models;
 
-public class Income
+public class OrderItem
 {
     public int Id { get; set; }
 
-    public int? CustomerId { get; set; }
-    public Customer? Customer { get; set; }
-
-    public int? ProductId { get; set; }
+    [Required]
+    public int OrderId { get; set; }
+    public Order? Order { get; set; }
 
     [Required]
-    [MaxLength(100)]
-    public string Product { get; set; } = string.Empty;
+    public int ProductId { get; set; }
+    public Product? Product { get; set; }
 
-    [Range(1, 100000)]
     [Column(TypeName = "decimal(18,2)")]
     public decimal Quantity { get; set; }
 
-    [Range(0, 1000000)]
     [Column(TypeName = "decimal(18,2)")]
     public decimal UnitPrice { get; set; }
 
     [Column(TypeName = "decimal(18,2)")]
-    public decimal Amount { get; set; }
+    public decimal LineTotal { get; set; }
 
-    public DateTime Date { get; set; } = DateTime.UtcNow;
+    [MaxLength(200)]
+    public string Remarks { get; set; } = "";
 }

@@ -4,7 +4,11 @@ import { useEffect, useState } from "react";
 
 type Sale = {
   id: number;
-  product: string;
+  productId?: number | null;
+  product?: {
+    id: number;
+    name: string;
+  } | null;
   quantity: number;
   unitPrice: number;
   amount: number;
@@ -21,17 +25,25 @@ type Customer = {
   name: string;
 };
 
+type Product = {
+  id: number;
+  name: string;
+  defaultPrice: number;
+};
+
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "";
+
 
 export default function IncomePage() {
   const [sales, setSales] = useState<Sale[]>([]);
-  const [product, setProduct] = useState("5 Gallon Refill");
+  const [productId, setProductId] = useState("");
   const [quantity, setQuantity] = useState("");
-  const [unitPrice, setUnitPrice] = useState("");
+  const [unitPrice, setUnitPrice] = useState("25");
   const [date, setDate] = useState("");
   const [loading, setLoading] = useState(false);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [customerId, setCustomerId] = useState("");
+  const [products, setProducts] = useState<Product[]>([]);
 
 const token =
   typeof window !== "undefined" ? localStorage.getItem("token") : null;
@@ -73,6 +85,24 @@ const handleDeleterole =
     }
   }
 
+async function fetchProducts() {
+  try {
+    const res = await fetch(`${API_BASE}/api/products`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    if (!res.ok) throw new Error("Failed to fetch products");
+
+    const data = await res.json();
+    setProducts(data);
+  } catch (err) {
+    console.error(err);
+  }
+}
+
+
 async function fetchCustomers() {
   try {
     const res = await fetch(`${API_BASE}/api/customers`, {
@@ -96,46 +126,83 @@ async function fetchCustomers() {
   useEffect(() => {
     fetchSales();
     fetchCustomers();
+    fetchProducts();
   }, []);
-  
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    setLoading(true);
 
-    try {
-      const res = await fetch(`${API_BASE}/api/income`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
+async function handleSubmit(e: React.FormEvent) {
+  e.preventDefault();
 
-   body: JSON.stringify({
-     product,
-     quantity: Number(quantity),
-     unitPrice: Number(unitPrice),
-     customerId: Number(customerId),
-     date: date || new Date().toISOString(),
-  })
-      });
+if (!productId) {
+  alert("Please select a product.");
+  return;
+}
 
-      if (!res.ok) {
-        throw new Error("Failed to save sale");
-      }
-
-      setProduct("5 Gallon Refill");
-      setQuantity("");
-      setUnitPrice("");
-      setDate("");
-
-      await fetchSales();
-    } catch (error) {
-      console.error(error);
-      alert("Failed to save sale");
-    } finally {
-      setLoading(false);
-    }
+  // VALIDATION START
+  if (!customerId) {
+    alert("Please select a customer.");
+    return;
   }
+
+  if (Number(quantity) <= 0) {
+    alert("Quantity must be greater than 0.");
+    return;
+  }
+
+  if (Number(unitPrice) <= 0) {
+    alert("Unit price must be greater than 0.");
+    return;
+  }
+  // VALIDATION END
+
+  setLoading(true);
+
+  try {
+
+        const payload = {
+  customerId: Number(customerId),
+  productId: Number(productId),
+  product:
+    products.find((p) => p.id === Number(productId))?.name || "",
+  quantity: Number(quantity),
+  unitPrice: Number(unitPrice),
+  date: date || new Date().toISOString(),
+};
+
+    console.log("Saving sale payload:", payload);
+
+    const res = await fetch(`${API_BASE}/api/income`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(payload),
+    });
+
+    const text = await res.text();
+console.log("RAW RESPONSE:", text);
+
+if (!res.ok) {
+  alert(text || "Failed to save sale");
+  return;
+}
+
+    setCustomerId("");
+    setProductId("");
+    setQuantity("");
+    setUnitPrice("");
+    setDate("");
+
+    await fetchSales();
+  } catch (error) {
+    console.error(error);
+    alert("Failed to save sale");
+  } finally {
+    setLoading(false);
+  }
+}
+
+
 
   async function handleDelete(id: number) {
     const confirmed = confirm("Delete this sale record?");
@@ -189,23 +256,33 @@ async function fetchCustomers() {
   </select>
 </div>
 
-  {/* Product */}
-  <div>
-    <label className="block text-sm font-medium mb-1 text-gray-700">
-      Product
-    </label>
-    <select
-      value={product}
-      onChange={(e) => setProduct(e.target.value)}
-      className="w-full border border-gray-300 rounded-lg px-3 py-2 bg-white text-gray-900"
-    >
-      <option value="5 Gallon Refill">5 Gallon Refill</option>
-      <option value="1 Gallon Refill">1 Gallon Refill</option>
-      <option value="Container Sale">Container Sale</option>
-      <option value="Bottle Water">Bottle Water</option>
-      <option value="Delivery Fee">Delivery Fee</option>
-    </select>
-  </div>
+
+<div>
+  <label className="block text-sm font-medium mb-1 text-gray-700">
+    Product
+  </label>
+  <select
+    value={productId}
+    onChange={(e) => {
+      const selectedId = e.target.value;
+      const selectedProduct = products.find(
+        (p) => p.id === Number(selectedId)
+      );
+
+      setProductId(selectedId);
+      setUnitPrice(String(selectedProduct?.defaultPrice ?? ""));
+    }}
+    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-gray-900 bg-white"
+    required
+  >
+    <option value="">Select product</option>
+    {products.map((p) => (
+      <option key={p.id} value={p.id}>
+        {p.name}
+      </option>
+    ))}
+  </select>
+</div>
 
   {/* Quantity */}
   <div>
@@ -215,6 +292,7 @@ async function fetchCustomers() {
     <input
       type="number"
       step="0.01"
+      min="0.01"
       value={quantity}
       onChange={(e) => setQuantity(e.target.value)}
       className="w-full border border-gray-300 rounded-lg px-3 py-2 bg-white text-gray-900 placeholder:text-gray-400"
@@ -228,15 +306,20 @@ async function fetchCustomers() {
     <label className="block text-sm font-medium mb-1 text-gray-700">
       Unit Price
     </label>
-    <input
-      type="number"
-      step="0.01"
-      value={unitPrice}
-      onChange={(e) => setUnitPrice(e.target.value)}
-      className="w-full border border-gray-300 rounded-lg px-3 py-2 bg-white text-gray-900 placeholder:text-gray-400"
-      placeholder="Enter unit price"
-      required
-    />
+<input
+  type="number"
+  step="0.01"
+  min="0.01"
+  value={unitPrice}
+  onChange={(e) => setUnitPrice(e.target.value)}
+  className={`w-full border border-gray-300 rounded-lg px-3 py-2 text-gray-900 placeholder:text-gray-400 ${
+    role !== "Admin" ? "bg-gray-100 cursor-not-allowed" : "bg-white"
+  }`}
+  placeholder="Enter unit price"
+  required
+  readOnly={role !== "Admin"}
+/>
+
   </div>
 
   {/* Date */}
@@ -294,7 +377,7 @@ async function fetchCustomers() {
 <tr key={item.id} className="border-t text-gray-900">
   <td className="px-4 py-3">{index + 1}</td>
   <td className="px-4 py-3">{item.customer?.name || "-"}</td>
-  <td className="px-4 py-3">{item.product}</td>
+  <td className="px-4 py-3">{item.product?.name || "-"}</td>
   <td className="px-4 py-3">{item.quantity}</td>
   <td className="px-4 py-3">{Number(item.unitPrice).toFixed(2)}</td>
   <td className="px-4 py-3 font-medium">{Number(item.amount).toFixed(2)}</td>
