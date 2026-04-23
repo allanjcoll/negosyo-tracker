@@ -174,29 +174,29 @@ return (
       </div>
 
       {/* AMOUNT CARDS */}
-      <div className="mb-4 grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="bg-gray-50 rounded-lg p-3">
+      <div className="mb-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
+        <div className="bg-gray-50 rounded-lg p-2 sm:p-3">
           <p className="text-gray-500 text-sm">Total Amount</p>
           <p className="font-bold text-gray-900">
             ₱ {Number(order.totalAmount).toFixed(2)}
           </p>
         </div>
 
-        <div className="bg-green-50 rounded-lg p-3">
+        <div className="p-2 sm:p-3">
           <p className="text-gray-500 text-sm">Paid Amount</p>
           <p className="font-bold text-green-600">
             ₱ {Number(order.paidAmount).toFixed(2)}
           </p>
         </div>
 
-        <div className="bg-red-50 rounded-lg p-3">
+        <div className="p-2 sm:p-3">
           <p className="text-gray-500 text-sm">Remaining Balance</p>
           <p className="font-bold text-red-600">
             ₱ {Number(order.balanceAmount).toFixed(2)}
           </p>
         </div>
 
-        <div className="bg-yellow-50 rounded-lg p-3">
+        <div className="p-2 sm:p-3">
           <p className="text-gray-500 text-sm">Status</p>
           <p className="font-bold text-yellow-700">
             {order.paymentStatus}
@@ -212,7 +212,7 @@ return (
           <p className="text-gray-500">No items.</p>
         ) : (
           <div className="overflow-x-auto">
-            <table className="min-w-full text-sm text-gray-900">
+            <table className="min-w-[600px] w-full text-xs sm:text-sm text-gray-900">
               <thead className="bg-gray-100 text-left">
                 <tr>
                   <th className="px-4 py-2">Product</th>
@@ -248,7 +248,7 @@ return (
           <p className="text-gray-500">No payments yet.</p>
         ) : (
           <div className="overflow-x-auto">
-            <table className="min-w-full text-sm text-gray-900">
+            <table className="min-w-[600px] w-full text-xs sm:text-sm text-gray-900">
               <thead className="bg-gray-100 text-left">
                 <tr>
                   <th className="px-4 py-2">Date</th>
@@ -286,26 +286,64 @@ return (
 
       {/* ADD PAYMENT */}
       {order.balanceAmount > 0 && (
-        <div className="rounded-xl bg-white p-4 shadow mt-4">
-          <h2 className="mb-2 font-semibold">Add Payment</h2>
+  <div className="rounded-xl bg-white p-4 shadow mt-4">
+    <h2 className="mb-3 font-semibold">Add Payment</h2>
 
-          <input
-            type="number"
-            placeholder="Enter amount"
-            value={paymentAmount}
-            onChange={(e) => setPaymentAmount(e.target.value)}
-            className="mb-2 w-full rounded border px-3 py-2"
-          />
+    <input
+      type="number"
+      placeholder="Enter amount"
+      value={paymentAmount}
+      onChange={(e) => setPaymentAmount(e.target.value)}
+      className="mb-3 w-full rounded border px-3 py-2"
+    />
 
-          <button
-            onClick={handlePayment}
-            disabled={!paymentAmount || order.balanceAmount <= 0}
-            className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded disabled:opacity-50"
-          >
-            Add Payment
-          </button>
-        </div>
-      )}
+    <div className="flex flex-wrap gap-2 mb-3">
+      <button
+        type="button"
+        onClick={() => setPaymentAmount(String(order.balanceAmount))}
+        className="bg-green-600 text-white px-3 py-2 rounded"
+      >
+        Exact
+      </button>
+
+      {[100, 200, 500, 1000].map((amt) => (
+        <button
+          key={amt}
+          type="button"
+          onClick={() => setPaymentAmount(String(amt))}
+          className="bg-gray-200 px-3 py-2 rounded"
+        >
+          ₱ {amt}
+        </button>
+      ))}
+
+      <button
+        type="button"
+        onClick={() => setPaymentAmount(String(order.balanceAmount))}
+        className="bg-blue-600 text-white px-3 py-2 rounded"
+      >
+        Pay Full Balance
+      </button>
+    </div>
+
+    <div className="flex flex-col sm:flex-row gap-2">
+      <button
+        onClick={handlePayment}
+        disabled={!paymentAmount || order.balanceAmount <= 0}
+        className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded disabled:opacity-50"
+      >
+        Add Payment
+      </button>
+
+      <a
+        href={`/orders/${order.id}/receipt`}
+        className="bg-gray-800 hover:bg-gray-900 text-white px-4 py-2 rounded text-center"
+      >
+        Print Receipt
+      </a>
+    </div>
+  </div>
+)}
     </div>
   </main>
 );

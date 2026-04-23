@@ -58,6 +58,7 @@ public class AuthController : ControllerBase
         });
     }
 
+   
     [Authorize]
     [HttpPost("change-password")]
     public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequest request)

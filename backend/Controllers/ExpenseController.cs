@@ -8,7 +8,7 @@ namespace backend.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-[Authorize(Roles = "Admin")]
+[Authorize]
 public class ExpenseController : ControllerBase
 {
     private readonly ApplicationDbContext _context;
@@ -18,6 +18,7 @@ public class ExpenseController : ControllerBase
         _context = context;
     }
 
+[Authorize(Roles = "Admin")]
     [HttpGet]
     public async Task<ActionResult<IEnumerable<Expense>>> GetAll()
     {
@@ -28,6 +29,7 @@ public class ExpenseController : ControllerBase
         return Ok(expenses);
     }
 
+[Authorize(Roles = "Admin")]
     [HttpGet("{id}")]
     public async Task<ActionResult<Expense>> GetById(int id)
     {
@@ -41,6 +43,29 @@ public class ExpenseController : ControllerBase
         return Ok(expense);
     }
 
+[Authorize(Roles = "Admin,User")]
+[HttpGet("today")]
+public async Task<ActionResult<IEnumerable<Expense>>> GetToday()
+{
+    var tz = TimeZoneInfo.FindSystemTimeZoneById("Asia/Manila");
+
+    var nowManila = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, tz);
+    var startOfDayManila = nowManila.Date;
+    var endOfDayManila = startOfDayManila.AddDays(1);
+
+    var startUtc = TimeZoneInfo.ConvertTimeToUtc(startOfDayManila, tz);
+    var endUtc = TimeZoneInfo.ConvertTimeToUtc(endOfDayManila, tz);
+
+    var expenses = await _context.Expenses
+        .Where(x => x.Date >= startUtc && x.Date < endUtc)
+        .OrderByDescending(x => x.Date)
+        .ToListAsync();
+
+    return Ok(expenses);
+}
+
+
+[Authorize(Roles = "Admin,User")]
     [HttpPost]
     public async Task<ActionResult<Expense>> Create(Expense expense)
     {
@@ -52,6 +77,7 @@ public class ExpenseController : ControllerBase
         return CreatedAtAction(nameof(GetById), new { id = expense.Id }, expense);
     }
 
+[Authorize(Roles = "Admin")]
     [HttpPut("{id}")]
     public async Task<IActionResult> Update(int id, Expense expense)
     {
@@ -75,6 +101,7 @@ public class ExpenseController : ControllerBase
         return NoContent();
     }
 
+[Authorize(Roles = "Admin")]
     [HttpDelete("{id}")]
     public async Task<IActionResult> Delete(int id)
     {

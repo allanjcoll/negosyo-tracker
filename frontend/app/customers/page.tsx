@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useEffect, useState } from "react";
@@ -33,9 +34,11 @@ export default function CustomersPage() {
     typeof window !== "undefined" ? localStorage.getItem("token") : null;
 
   const role =
-    typeof window !== "undefined" && token
-      ? JSON.parse(atob(token.split(".")[1])).role
-      : null;
+  typeof window !== "undefined" && token
+    ? JSON.parse(atob(token.split(".")[1]))[
+        "http://schemas.microsoft.com/ws/2008/06/identity/claims/role"
+      ]
+    : null;
 
   async function fetchCustomers() {
     try {
@@ -114,7 +117,7 @@ export default function CustomersPage() {
         {role === "Admin" && (
           <form
             onSubmit={handleSubmit}
-            className="grid grid-cols-1 md:grid-cols-3 gap-4 bg-white text-gray-900 rounded-xl shadow p-4 mb-6"
+            className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 bg-white text-gray-900 rounded-xl shadow p-4 mb-6"
           >
             <div>
               <label className="block text-sm font-medium mb-1 text-gray-700">Name</label>
@@ -122,7 +125,7 @@ export default function CustomersPage() {
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-gray-900"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 sm:py-2.5 text-gray-900"
                 placeholder="Customer name"
                 required
               />
@@ -209,7 +212,8 @@ export default function CustomersPage() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full bg-blue-600 text-white rounded-lg px-4 py-2 hover:bg-blue-700 disabled:opacity-50"
+                className="w-full bg-blue-600 text-white rounded-lg px-4 py-2.5 sm:py-2 hover:bg-blue-700 disabled:opacity-50"
+
               >
                 {loading ? "Saving..." : "Add Customer"}
               </button>
@@ -217,8 +221,8 @@ export default function CustomersPage() {
           </form>
         )}
 
-        <div className="bg-white text-gray-900 rounded-xl shadow overflow-x-auto">
-          <table className="min-w-full text-sm text-gray-900">
+        <div className="bg-white text-gray-900 rounded-xl shadow overflow-x-auto mt-4">
+          <table className="min-w-[600px] w-full text-xs sm:text-sm text-gray-900">
             <thead className="bg-gray-100 text-left text-gray-700">
               <tr>
                 <th className="px-4 py-3">No.</th>

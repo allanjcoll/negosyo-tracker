@@ -146,21 +146,22 @@ async function handleCreateCustomer() {
 }, []);
 
   
-function handleAddItem() {
+function handleAddItem(showAlert = true) {
   if (!selectedProductId) {
-    alert("Please select a product.");
+    if (showAlert) alert("Please select a product.");
     return;
   }
 
   if (Number(selectedQuantity) <= 0) {
-    alert("Quantity must be greater than 0.");
+    if (showAlert) alert("Quantity must be greater than 0.");
     return;
   }
 
   if (Number(selectedUnitPrice) <= 0) {
-    alert("Unit price must be greater than 0.");
+    if (showAlert) alert("Unit price must be greater than 0.");
     return;
   }
+
 
   const selectedProduct = products.find(
     (p) => p.id === Number(selectedProductId)
@@ -209,7 +210,13 @@ function handleAddItem() {
   setSelectedQuantity("");
   setSelectedUnitPrice("");
 }
-
+ 
+ function handleEnterAdd(e: React.KeyboardEvent) {
+  if (e.key === "Enter") {
+    e.preventDefault();
+    handleAddItem(false);
+  }
+}
 
   function handleRemoveItem(index: number) {
     setItems((prev) => prev.filter((_, i) => i !== index));
@@ -275,9 +282,9 @@ function handleAddItem() {
         return;
       }
 
-      await orderRes.json();
+      const created = await orderRes.json();
 
-      alert("Order saved successfully.");
+      window.location.href = `/orders/${created.id}`;
 
       // Reset form
       setCustomerId("");
@@ -295,13 +302,18 @@ function handleAddItem() {
     }
   }
 
+
 return (
   <>
-    <main className="p-4 md:p-6">
-      <div className="mx-auto max-w-6xl">
-        <h1 className="text-2xl font-bold mb-6">New Order</h1>
+    <main className="min-h-screen bg-slate-950 px-4 py-5 md:px-6 md:py-6">
+      <div className="mx-auto max-w-6xl space-y-6">
+        <div>
+  <h1 className="text-3xl font-bold text-white">New Order</h1>
+  <p className="text-sm text-slate-400">Create a new transaction</p>
+</div>
 
-        <div className="bg-white text-gray-900 rounded-xl shadow p-4 mb-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="rounded-2xl border border-slate-800 bg-gradient-to-br from-slate-900 to-slate-950 p-5 shadow-lg grid grid-cols-1 sm:grid-cols-2 gap-4">
+
           <div>
             <div className="flex items-center justify-between mb-1">
               <label className="text-sm font-medium text-gray-700">
@@ -317,48 +329,48 @@ return (
               </button>
             </div>
 
-          <div className="relative">
-  <input
-    ref={customerRef}
-    type="text"
-    value={customerSearch}
-    onChange={(e) => {
-      setCustomerSearch(e.target.value);
-      setShowCustomerResults(true);
-      setCustomerId("");
-    }}
-    onFocus={() => setShowCustomerResults(true)}
-    placeholder="Search customer"
-    className="w-full border border-gray-300 rounded-lg px-3 py-2"
-  />
+            <div className="relative">
+              <input
+                ref={customerRef}
+                type="text"
+                value={customerSearch}
+                onChange={(e) => {
+                  setCustomerSearch(e.target.value);
+                  setShowCustomerResults(true);
+                  setCustomerId("");
+                }}
+                onFocus={() => setShowCustomerResults(true)}
+                placeholder="Search customer"
+                className="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-white focus:border-blue-500 focus:outline-none"
 
-  {showCustomerResults && customerSearch.trim() !== "" && (
-    <div className="absolute z-20 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow max-h-60 overflow-y-auto">
-      {filteredCustomers.length === 0 ? (
-        <div className="px-3 py-2 text-sm text-gray-500">
-          No customer found
-        </div>
-      ) : (
-        filteredCustomers.map((customer) => (
-          <button
-            key={customer.id}
-            type="button"
-            onClick={() => {
-              setCustomerId(String(customer.id));
-              setCustomerSearch(customer.name);
-              setShowCustomerResults(false);
-            }}
-            className="block w-full text-left px-3 py-2 hover:bg-gray-100"
-          >
-            {customer.name}
-          </button>
-        ))
-      )}
-    </div>
-  )}
-</div>
+              />
 
-    </div>
+              {showCustomerResults && customerSearch.trim() !== "" && (
+                <div className="absolute z-20 mt-1 w-full bg-slate-900 border border-slate-700 rounded-lg shadow max-h-60 overflow-y-auto">
+                  {filteredCustomers.length === 0 ? (
+                    <div className="px-3 py-2 text-sm text-gray-500">
+                      No customer found
+                    </div>
+                  ) : (
+                    filteredCustomers.map((customer) => (
+                      <button
+                        key={customer.id}
+                        type="button"
+                        onClick={() => {
+                          setCustomerId(String(customer.id));
+                          setCustomerSearch(customer.name);
+                          setShowCustomerResults(false);
+                        }}
+                        className="block w-full text-left px-3 py-2 hover:bg-gray-100"
+                      >
+                        {customer.name}
+                      </button>
+                    ))
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
 
           <div>
             <label className="block text-sm font-medium mb-1 text-gray-700">
@@ -374,11 +386,11 @@ return (
           </div>
         </div>
 
-        <div className="bg-white text-gray-900 rounded-xl shadow p-4 mb-6">
+        <div className="rounded-2xl border border-slate-800 bg-gradient-to-br from-slate-900 to-slate-950 p-5 shadow-lg">
           <div className="mb-6">
             <h2 className="text-lg font-semibold mb-2">Quick Add</h2>
 
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
               {products.map((product) => (
                 <button
                   key={product.id}
@@ -392,7 +404,6 @@ return (
                       if (existingIndex !== -1) {
                         const updated = [...prev];
                         const existing = updated[existingIndex];
-
                         const newQty = existing.quantity + 1;
                         const newTotal = newQty * existing.unitPrice;
 
@@ -417,7 +428,8 @@ return (
                       ];
                     });
                   }}
-                  className="bg-gray-100 hover:bg-gray-200 rounded-lg p-3 text-left"
+                  className="rounded-xl border border-slate-800 bg-slate-900 p-3 sm:p-4 text-left text-white hover:bg-blue-600 transition"
+
                 >
                   <div className="font-medium">{product.name}</div>
                   <div className="text-sm text-gray-500">
@@ -453,6 +465,7 @@ return (
               type="number"
               value={selectedQuantity}
               onChange={(e) => setSelectedQuantity(e.target.value)}
+              onKeyDown={handleEnterAdd}
               className="border border-gray-300 rounded-lg px-3 py-2"
               placeholder="Qty"
             />
@@ -461,37 +474,52 @@ return (
               type="number"
               value={selectedUnitPrice}
               onChange={(e) => setSelectedUnitPrice(e.target.value)}
+              onKeyDown={handleEnterAdd}
               className="border border-gray-300 rounded-lg px-3 py-2"
               placeholder="Price"
             />
 
             <button
               type="button"
-              onClick={handleAddItem}
-              className="bg-green-600 text-white rounded-lg px-4 py-2"
+              onClick={() => handleAddItem(true)}
+              className="bg-green-600 text-white rounded-lg px-4 py-3 w-full md:w-auto"
             >
               Add
             </button>
           </div>
 
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="bg-gray-100">
-                <th>No</th>
-                <th>Product</th>
-                <th>Qty</th>
-                <th>Price</th>
-                <th>Total</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody>
-              {items.map((item, idx) => (
-                <tr key={idx}>
-                  <td>{idx + 1}</td>
-                  <td>{item.productName}</td>
-                  <td>
-                    <div className="flex items-center gap-2">
+          {items.length === 0 ? (
+            <div className="rounded-xl border border-dashed border-slate-700 p-5 text-center text-sm text-slate-400">
+              No items added yet.
+            </div>
+          ) : (
+            <>
+              <div className="space-y-3 md:hidden">
+                {items.map((item, idx) => (
+                  <div key={idx} className="rounded-lg border border-gray-200 p-3">
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <p className="text-sm font-semibold text-gray-900">
+                          {idx + 1}. {item.productName}
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          ₱ {item.unitPrice.toFixed(2)} each
+                        </p>
+                        <p className="mt-1 text-sm font-medium text-gray-700">
+                          Total: ₱ {item.lineTotal.toFixed(2)}
+                        </p>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveItem(idx)}
+                        className="rounded bg-red-100 px-2 py-1 text-xs text-red-600"
+                      >
+                        Remove
+                      </button>
+                    </div>
+
+                    <div className="mt-3 flex items-center gap-3">
                       <button
                         type="button"
                         onClick={() => {
@@ -499,10 +527,8 @@ return (
                             prev
                               .map((it, i) => {
                                 if (i !== idx) return it;
-
                                 const newQty = it.quantity - 1;
                                 if (newQty <= 0) return null;
-
                                 return {
                                   ...it,
                                   quantity: newQty,
@@ -512,12 +538,14 @@ return (
                               .filter(Boolean) as typeof items
                           );
                         }}
-                        className="px-2 bg-gray-200 rounded"
+                        className="rounded bg-gray-200 px-3 py-1 text-base"
                       >
                         -
                       </button>
 
-                      <span>{item.quantity}</span>
+                      <span className="min-w-[24px] text-center text-sm font-semibold">
+                        {item.quantity}
+                      </span>
 
                       <button
                         type="button"
@@ -525,7 +553,6 @@ return (
                           setItems((prev) =>
                             prev.map((it, i) => {
                               if (i !== idx) return it;
-
                               const newQty = it.quantity + 1;
                               return {
                                 ...it,
@@ -535,27 +562,102 @@ return (
                             })
                           );
                         }}
-                        className="px-2 bg-gray-200 rounded"
+                        className="rounded bg-gray-200 px-3 py-1 text-base"
                       >
                         +
                       </button>
                     </div>
-                  </td>
-                  <td>{item.unitPrice}</td>
-                  <td>{item.lineTotal}</td>
-                  <td>
-                    <button type="button" onClick={() => handleRemoveItem(idx)}>
-                      Remove
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                  </div>
+                ))}
+              </div>
+
+              <div className="hidden overflow-x-auto md:block">
+                <table className="min-w-[600px] w-full text-sm">
+                  <thead>
+                    <tr className="bg-gray-100">
+                      <th className="px-3 py-2 text-left">No</th>
+                      <th className="px-3 py-2 text-left">Product</th>
+                      <th className="px-3 py-2 text-left">Qty</th>
+                      <th className="px-3 py-2 text-left">Price</th>
+                      <th className="px-3 py-2 text-left">Total</th>
+                      <th className="px-3 py-2 text-left"></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {items.map((item, idx) => (
+                      <tr key={idx} className="border-t">
+                        <td className="px-3 py-2">{idx + 1}</td>
+                        <td className="px-3 py-2">{item.productName}</td>
+                        <td className="px-3 py-2">
+                          <div className="flex items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setItems((prev) =>
+                                  prev
+                                    .map((it, i) => {
+                                      if (i !== idx) return it;
+                                      const newQty = it.quantity - 1;
+                                      if (newQty <= 0) return null;
+                                      return {
+                                        ...it,
+                                        quantity: newQty,
+                                        lineTotal: newQty * it.unitPrice,
+                                      };
+                                    })
+                                    .filter(Boolean) as typeof items
+                                );
+                              }}
+                              className="px-2 bg-gray-200 rounded"
+                            >
+                              -
+                            </button>
+
+                            <span>{item.quantity}</span>
+
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setItems((prev) =>
+                                  prev.map((it, i) => {
+                                    if (i !== idx) return it;
+                                    const newQty = it.quantity + 1;
+                                    return {
+                                      ...it,
+                                      quantity: newQty,
+                                      lineTotal: newQty * it.unitPrice,
+                                    };
+                                  })
+                                );
+                              }}
+                              className="px-2 bg-gray-200 rounded"
+                            >
+                              +
+                            </button>
+                          </div>
+                        </td>
+                        <td className="px-3 py-2">₱ {item.unitPrice.toFixed(2)}</td>
+                        <td className="px-3 py-2">₱ {item.lineTotal.toFixed(2)}</td>
+                        <td className="px-3 py-2">
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveItem(idx)}
+                            className="text-red-600"
+                          >
+                            Remove
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </>
+          )}
         </div>
 
-        <div className="bg-white rounded-xl shadow p-4">
-          <div>Subtotal: ₱ {subtotal.toFixed(2)}</div>
+       <div className="sticky bottom-0 z-10 rounded-2xl border border-slate-800 bg-slate-900 p-4 shadow-lg">      
+        <div>Subtotal: ₱ {subtotal.toFixed(2)}</div>
 
           <input
             type="number"
@@ -569,7 +671,7 @@ return (
             <button
               type="button"
               onClick={() => setPaidAmount(String(subtotal))}
-              className="bg-green-600 text-white px-3 py-1 rounded"
+              className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded"
             >
               Exact
             </button>
@@ -579,7 +681,7 @@ return (
                 key={amt}
                 type="button"
                 onClick={() => setPaidAmount(String(amt))}
-                className="bg-gray-200 px-3 py-1 rounded"
+                className="bg-slate-800 text-white px-3 py-1 rounded"
               >
                 ₱ {amt}
               </button>
@@ -588,7 +690,7 @@ return (
             <button
               type="button"
               onClick={() => setPaidAmount("0")}
-              className="bg-red-500 text-white px-3 py-1 rounded"
+              className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded"
             >
               Utang
             </button>
@@ -600,7 +702,7 @@ return (
             type="button"
             onClick={handleSaveOrder}
             disabled={loading}
-            className="mt-4 bg-blue-600 text-white px-4 py-2 rounded"
+            className="mt-4 bg-blue-600 text-white px-4 py-3 rounded w-full text-lg"
           >
             {loading ? "Saving..." : "Save Order"}
           </button>
@@ -608,96 +710,91 @@ return (
       </div>
     </main>
 
-{showCustomerModal && (
-  <div className="fixed inset-0 bg-black/30 flex items-center justify-center">
-    <div className="bg-white p-6 rounded-xl w-full max-w-md">
-      <h2 className="text-lg font-semibold mb-4">New Customer</h2>
+    {showCustomerModal && (
+      <div className="fixed inset-0 z-[100] bg-black/70 p-4 flex items-center justify-center">
+        <div className="relative z-[101] w-full max-w-md rounded-2xl border border-slate-800 bg-slate-900 p-6 shadow-2xl max-h-[90vh] overflow-y-auto">
+          <h2 className="mb-4 text-xl font-semibold text-white">New Customer</h2>
 
-      <div className="space-y-3">
-        <div>
-          <label className="block text-sm font-medium mb-1 text-gray-700">
-            Customer Name
-          </label>
-          <input
-            type="text"
-            value={newCustomerName}
-            onChange={(e) => setNewCustomerName(e.target.value)}
-            placeholder="Enter customer name"
-            className="w-full border border-gray-300 rounded-lg px-3 py-2"
-          />
-        </div>
+          <div className="space-y-3">
+            <div>
+              <label className="mb-1 block text-sm font-medium text-slate-300">
+                Customer Name
+              </label>
+              <input
+                type="text"
+                value={newCustomerName}
+                onChange={(e) => setNewCustomerName(e.target.value)}
+                placeholder="Enter customer name"
+                className="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-white focus:border-blue-500 focus:outline-none"
+              />
+            </div>
 
-        <div>
-          <label className="block text-sm font-medium mb-1 text-gray-700">
-            Phone Number
-          </label>
-          <input
-            type="text"
-            value={newCustomerPhone}
-            onChange={(e) => setNewCustomerPhone(e.target.value)}
-            placeholder="Enter phone number"
-            className="w-full border border-gray-300 rounded-lg px-3 py-2"
-          />
-        </div>
+            <div>
+              <label className="block text-sm font-medium mb-1 text-gray-700">
+                Phone Number
+              </label>
+              <input
+                type="text"
+                value={newCustomerPhone}
+                onChange={(e) => setNewCustomerPhone(e.target.value)}
+                placeholder="Enter phone number"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2"
+              />
+            </div>
 
-        <div>
-          <label className="block text-sm font-medium mb-1 text-gray-700">
-            Area
-          </label>
-          <input
-            type="text"
-            value={newCustomerArea}
-            onChange={(e) => setNewCustomerArea(e.target.value)}
-            placeholder="Enter area"
-            className="w-full border border-gray-300 rounded-lg px-3 py-2"
-          />
-        </div>
+            <div>
+              <label className="block text-sm font-medium mb-1 text-gray-700">
+                Area
+              </label>
+              <input
+                type="text"
+                value={newCustomerArea}
+                onChange={(e) => setNewCustomerArea(e.target.value)}
+                placeholder="Enter area"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2"
+              />
+            </div>
 
-        <div>
-          <label className="block text-sm font-medium mb-1 text-gray-700">
-            City
-          </label>
-          <input
-            type="text"
-            value={newCustomerCity}
-            onChange={(e) => setNewCustomerCity(e.target.value)}
-            placeholder="Enter city"
-            className="w-full border border-gray-300 rounded-lg px-3 py-2"
-          />
+            <div>
+              <label className="block text-sm font-medium mb-1 text-gray-700">
+                City
+              </label>
+              <input
+                type="text"
+                value={newCustomerCity}
+                onChange={(e) => setNewCustomerCity(e.target.value)}
+                placeholder="Enter city"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2"
+              />
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-2 mt-5">
+            <button
+              type="button"
+              onClick={() => {
+                setShowCustomerModal(false);
+                setNewCustomerName("");
+                setNewCustomerPhone("");
+                setNewCustomerArea("");
+                setNewCustomerCity("");
+              }}
+              className="rounded-xl border border-slate-700 bg-slate-800 px-4 py-2 text-white"
+            >
+              Cancel
+            </button>
+
+            <button
+              type="button"
+              onClick={handleCreateCustomer}
+              className="rounded-xl bg-blue-600 px-4 py-2 text-white hover:bg-blue-700"
+            >
+              Save
+            </button>
+          </div>
         </div>
       </div>
-
-      <div className="flex justify-end gap-2 mt-5">
-        <button
-          type="button"
-          onClick={() => {
-            setShowCustomerModal(false);
-            setNewCustomerName("");
-            setNewCustomerPhone("");
-            setNewCustomerArea("");
-            setNewCustomerCity("");
-          }}
-          className="px-3 py-2 bg-gray-200 rounded"
-        >
-          Cancel
-        </button>
-
-        <button
-          type="button"
-          onClick={handleCreateCustomer}
-          className="px-3 py-2 bg-blue-600 text-white rounded"
-        >
-          Save
-        </button>
-      </div>
-    </div>
-  </div>
-)}
-
-
-
-
-
+    )}
   </>
 );
 }

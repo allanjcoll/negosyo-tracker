@@ -24,6 +24,7 @@ type PendingPayment = {
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "";
 
 export default function DashboardPage() {
+  const [role, setRole] = useState<string | null>(null);
   const [summary, setSummary] = useState<Summary | null>(null);
   const [pendingPayments, setPendingPayments] = useState<PendingPayment[]>([]);
   const [selectedPayment, setSelectedPayment] = useState<PendingPayment | null>(null);
@@ -35,7 +36,16 @@ export default function DashboardPage() {
     typeof window !== "undefined" ? localStorage.getItem("token") : null;
 
 useEffect(() => {
-  async function fetchData() {
+   if (token) {
+  try {
+    const payload = JSON.parse(atob(token.split(".")[1]));
+    const userRole =
+      payload["http://schemas.microsoft.com/ws/2008/06/identity/claims/role"];
+    setRole(userRole);
+  } catch {}
+}
+
+   async function fetchData() {
     try {
       // 🔹 Fetch summary
       const res = await fetch(`${API_BASE}/api/dashboard/summary`, {
@@ -199,18 +209,41 @@ const submitPayment = async () => {
 ];
 
   return (
-    <main className="p-4 md:p-6 bg-gray-50 min-h-screen">
-      <div className="mx-auto max-w-6xl space-y-6">
-        <h1 className="text-2xl font-bold">Dashboard</h1>
+    <main className="min-h-screen bg-slate-950 px-4 py-5 md:px-6 md:py-6">
+  <div className="mx-auto max-w-6xl space-y-6">
+    <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+      <div>
+        <h1 className="text-3xl font-bold tracking-tight text-white">Dashboard</h1>
+        <p className="text-sm text-slate-400">
+          Meridian Water Plus operations overview
+        </p>
+      </div>
+
+      <div className="flex flex-wrap gap-2">
+        <a
+          href="/orders/new"
+          className="rounded-xl bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow hover:bg-blue-700"
+        >
+          New Order
+        </a>
+        <a
+          href="/customers"
+          className="rounded-xl border border-slate-700 bg-slate-900 px-4 py-2 text-sm font-medium text-slate-200 hover:bg-slate-800"
+        >
+          Customers
+        </a>
+      </div>
+    </div>
 
         {loading ? (
           <div className="bg-white rounded-xl shadow p-6 text-sm text-gray-500">
             Loading dashboard...
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">           
+
             {cards.map((card) => {
-       
+          
            const valueColor =
               card.title.includes("Balance") || card.title.includes("Utang")
                 ? "text-red-500"
@@ -223,9 +256,12 @@ const submitPayment = async () => {
                 : "text-green-500";
             
               return (
-                <div key={card.title} className="bg-white rounded-xl shadow p-5">
+                <div
+  key={card.title}
+  className="rounded-2xl border border-slate-800 bg-gradient-to-br from-slate-900 to-slate-950 p-5 shadow-lg hover:shadow-xl transition"
+>
                   <p className="text-sm text-gray-500 mb-2">{card.title}</p>
-                  <h2 className={`text-2xl font-bold ${valueColor}`}>
+                  <h2 className="text-2xl sm:text-3xl font-bold text-white">
                     {card.title.includes("Orders")
                      ? card.value
                      : `₱ ${card.value}`}
@@ -236,95 +272,121 @@ const submitPayment = async () => {
           </div>
         )}
 
-        <div className="bg-white rounded-xl shadow p-5">
-          <h2 className="text-lg font-semibold mb-4">Quick Date Access</h2>
+        <div className="rounded-2xl border border-slate-800 bg-gradient-to-br from-slate-900 to-slate-950 p-5 shadow-lg">
 
-          <div className="grid grid-cols-7 gap-2 text-center text-sm">
-            {[...Array(7)].map((_, i) => (
-              <div key={i} className="font-semibold text-gray-500">
-                {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"][i]}
-              </div>
-            ))}
-
-            {[...Array(30)].map((_, i) => {
-              const day = i + 1;
-              const date = `2026-04-${String(day).padStart(2, "0")}`;
-
-              return (
-                <a
-                  key={i}
-                  href={`/sales/daily?date=${date}`}
-                  className="border rounded p-2 hover:bg-blue-50 text-sm"
-                >
-                  {day}
-                </a>
-              );
-            })}
-          </div>
-        </div>
-
-        <div className="bg-white rounded-xl shadow p-5">
-          <div className="flex justify-between mb-4">
-            <h2 className="text-lg font-semibold">Pending Payments</h2>
-            <a href="/customers/utang" className="text-blue-600 text-sm">
-              View all
-            </a>
-          </div>
-
-          <div className="space-y-3">
-  {pendingPayments.length === 0 ? (
-    <p className="text-sm text-gray-500">No pending payments.</p>
-  ) : (
-    pendingPayments.map((item) => (
-      <div key={item.orderId} className="border rounded-lg p-3">
-        <div className="flex justify-between items-start gap-3">
-          <div>
-            <p className="font-semibold text-gray-900">{item.customerName}</p>
-            <p className="text-xs text-gray-500">Order #{item.orderId}</p>
-          </div>
-
-          <span
-            className={`text-xs px-2 py-1 rounded ${
-              item.paymentStatus === "Partial"
-                ? "bg-yellow-100 text-yellow-700"
-                : "bg-red-100 text-red-700"
-            }`}
-          >
-            {item.paymentStatus}
-          </span>
-        </div>
-
-        <p className="mt-2 text-sm text-gray-500">Remaining Balance</p>
-        <p className="text-lg font-bold text-red-600">
-          ₱{" "}
-          {Number(item.balanceAmount).toLocaleString("en-PH", {
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2,
-          })}
+  {role === "Admin" && (
+    <>
+      <div className="mb-4">
+        <h2 className="text-lg font-semibold text-white">Quick Date Access</h2>
+        <p className="text-sm text-slate-400">
+          Jump quickly to daily sales by date
         </p>
-
-       <div className="mt-3 flex gap-3">
-          <a
-           href={`/orders/${item.orderId}`}
-            className="text-sm text-blue-600 hover:underline"
-          >
-         View Order
-         </a>
-
-       <button
-         onClick={() => handleCollectPayment(item)}
-          className="text-sm bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700"
-         >
-      Collect Payment
-       </button>
-      </div>        
-
-
       </div>
-    ))
+
+      <div className="grid grid-cols-7 gap-1 sm:gap-2 text-center text-xs sm:text-sm">
+        {[...Array(7)].map((_, i) => (
+          <div key={i} className="font-semibold text-slate-500">
+            {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"][i]}
+          </div>
+        ))}
+
+        {[...Array(30)].map((_, i) => {
+          const day = i + 1;
+          const date = `2026-04-${String(day).padStart(2, "0")}`;
+
+          return (
+            <a
+              key={i}
+              href={`/sales/daily?date=${date}`}
+              className="rounded-lg border border-slate-600 bg-slate-800 px-2 py-2 font-semibold text-white hover:bg-blue-600 hover:text-white transition"
+            >
+              {day}
+            </a>
+          );
+        })}
+      </div>
+    </>
   )}
+
 </div>
+
+      <div className="rounded-2xl border border-slate-800 bg-gradient-to-br from-slate-900 to-slate-950 p-5 shadow-lg">
+  <div className="mb-4 flex items-center justify-between gap-3">
+    <div>
+      <h2 className="text-lg font-semibold text-white">Pending Payments</h2>
+      <p className="text-sm text-slate-400">Orders that still need collection</p>
+    </div>
+
+    <a
+      href="/customers/utang"
+      className="rounded-xl border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-200 hover:bg-slate-800"
+    >
+      View all
+    </a>
+  </div>
+
+  <div className="space-y-3">
+    {pendingPayments.length === 0 ? (
+      <p className="text-sm text-slate-400">No pending payments.</p>
+    ) : (
+      pendingPayments.map((item) => (
+        <div
+          key={item.orderId}
+          className="rounded-2xl border border-slate-800 bg-slate-900/80 p-4"
+        >
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <p className="text-base font-semibold text-white">
+                {item.customerName}
+              </p>
+              <p className="text-xs text-slate-400">Order #{item.orderId}</p>
+            </div>
+
+            <span
+              className={`inline-flex w-fit rounded-full px-3 py-1 text-xs font-semibold ${
+                item.paymentStatus === "Partial"
+                  ? "bg-yellow-400/20 text-yellow-300"
+                  : "bg-red-400/20 text-red-300"
+              }`}
+            >
+              {item.paymentStatus}
+            </span>
+          </div>
+
+          <div className="mt-4">
+            <p className="text-xs uppercase tracking-wide text-slate-400">
+              Remaining Balance
+            </p>
+            <p className="mt-1 text-2xl font-bold text-red-400">
+              ₱{" "}
+              {Number(item.balanceAmount).toLocaleString("en-PH", {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+              })}
+            </p>
+          </div>
+
+          <div className="mt-4 flex flex-col gap-2 sm:flex-row">
+            <a
+              href={`/orders/${item.orderId}`}
+              className="inline-flex items-center justify-center rounded-xl border border-slate-700 bg-slate-800 px-4 py-2 text-sm font-medium text-slate-200 hover:bg-slate-700"
+            >
+              View Order
+            </a>
+
+            <button
+              onClick={() => handleCollectPayment(item)}
+              className="inline-flex items-center justify-center rounded-xl bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700"
+            >
+              Collect Payment
+            </button>
+          </div>
         </div>
+      ))
+    )}
+  </div>
+</div>
+
 
         <div className="bg-white rounded-xl shadow p-5">
           <div className="flex justify-between mb-4">
@@ -338,34 +400,55 @@ const submitPayment = async () => {
             (Next step: connect this to API)
           </p>
         </div>
-   {selectedPayment && (
-  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-    <div className="w-full max-w-md rounded-xl bg-white p-6 shadow-xl">
-      <h2 className="text-xl font-bold text-gray-900 mb-4">Collect Payment</h2>
+
+         {selectedPayment && (
+  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
+    <div className="w-full max-w-md rounded-2xl border border-slate-800 bg-gradient-to-br from-slate-900 to-slate-950 p-5 shadow-2xl">
+      <div className="mb-5 flex items-start justify-between gap-3">
+        <div>
+          <h2 className="text-xl font-bold text-white">Collect Payment</h2>
+          <p className="text-sm text-slate-400">
+            Receive payment for this order
+          </p>
+        </div>
+
+        <button
+          onClick={() => {
+            setSelectedPayment(null);
+            setPaymentAmount("");
+          }}
+          className="rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-200 hover:bg-slate-800"
+          disabled={submittingPayment}
+        >
+          Close
+        </button>
+      </div>
 
       <div className="space-y-2 text-sm">
-        <p>
-          <span className="font-semibold">Customer:</span>{" "}
-          {selectedPayment.customerName}
-        </p>
-        <p>
-          <span className="font-semibold">Order #:</span>{" "}
-          {selectedPayment.orderId}
-        </p>
-        <p>
-          <span className="font-semibold">Remaining Balance:</span>{" "}
-          <span className="text-red-600 font-bold">
+        <div className="rounded-xl border border-slate-800 bg-slate-900/80 p-3">
+          <p className="text-slate-400">Customer</p>
+          <p className="font-semibold text-white">{selectedPayment.customerName}</p>
+        </div>
+
+        <div className="rounded-xl border border-slate-800 bg-slate-900/80 p-3">
+          <p className="text-slate-400">Order</p>
+          <p className="font-semibold text-white">#{selectedPayment.orderId}</p>
+        </div>
+
+        <div className="rounded-xl border border-red-900/40 bg-red-500/10 p-3">
+          <p className="text-slate-300">Remaining Balance</p>
+          <p className="text-2xl font-bold text-red-400">
             ₱{" "}
             {Number(selectedPayment.balanceAmount).toLocaleString("en-PH", {
               minimumFractionDigits: 2,
               maximumFractionDigits: 2,
             })}
-          </span>
-        </p>
+          </p>
+        </div>
       </div>
 
-      <div className="mt-4">
-        <label className="block text-sm font-medium text-gray-700 mb-1">
+      <div className="mt-5">
+        <label className="mb-1 block text-sm font-medium text-slate-300">
           Payment Amount
         </label>
         <input
@@ -374,18 +457,39 @@ const submitPayment = async () => {
           step="0.01"
           value={paymentAmount}
           onChange={(e) => setPaymentAmount(e.target.value)}
-          className="w-full rounded-lg border px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500"
+          className="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-3 text-white focus:border-green-500 focus:outline-none"
           placeholder="Enter payment amount"
         />
       </div>
 
-      <div className="mt-6 flex justify-end gap-3">
+      <div className="mt-4 flex flex-wrap gap-2">
+        {[100, 200, 500, 1000].map((amt) => (
+          <button
+            key={amt}
+            type="button"
+            onClick={() => setPaymentAmount(String(amt))}
+            className="rounded-xl border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-200 hover:bg-slate-800"
+          >
+            ₱ {amt}
+          </button>
+        ))}
+
+        <button
+          type="button"
+          onClick={() => setPaymentAmount(String(selectedPayment.balanceAmount))}
+          className="rounded-xl bg-green-600 px-3 py-2 text-sm font-medium text-white hover:bg-green-700"
+        >
+          Pay Full
+        </button>
+      </div>
+
+      <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:justify-end">
         <button
           onClick={() => {
             setSelectedPayment(null);
             setPaymentAmount("");
           }}
-          className="rounded-lg border px-4 py-2 text-sm hover:bg-gray-50"
+          className="w-full rounded-xl border border-slate-700 bg-slate-900 px-4 py-3 text-sm font-medium text-slate-200 hover:bg-slate-800 sm:w-auto"
           disabled={submittingPayment}
         >
           Cancel
@@ -393,7 +497,7 @@ const submitPayment = async () => {
 
         <button
           onClick={submitPayment}
-          className="rounded-lg bg-green-600 px-4 py-2 text-sm text-white hover:bg-green-700 disabled:opacity-50"
+          className="w-full rounded-xl bg-green-600 px-4 py-3 text-sm font-medium text-white hover:bg-green-700 disabled:opacity-50 sm:w-auto"
           disabled={submittingPayment}
         >
           {submittingPayment ? "Submitting..." : "Submit Payment"}
@@ -402,6 +506,7 @@ const submitPayment = async () => {
     </div>
   </div>
 )}
+
 
     </div> 
     </main>
